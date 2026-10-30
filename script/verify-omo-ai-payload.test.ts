@@ -37,6 +37,7 @@ const PACKED_ARTIFACTS = [
   "plugin/runtime/category-coverage/index.js",
   "plugin/runtime/category-coverage/assets.generated.json",
   "plugin/runtime/task-config/index.js",
+  "plugin/runtime/dag-viewer/index.js",
 ] as const
 
 const CATEGORY_COVERAGE_BUNDLE = "plugin/runtime/category-coverage/index.js"
@@ -114,6 +115,12 @@ describe("omo-ai payload verifier", () => {
     const run = runVerifierOnPayload([...PACKED_ARTIFACTS.filter(path => path !== "plugin/runtime/task-config/index.js"), ...skillPaths(PACKED_SKILL_COUNT)])
     expect(run.exitCode).toBe(1)
     expect(run.output).toContain("missing artifact: plugin/runtime/task-config/index.js")
+  })
+
+  test("#given a payload missing only the omo dag viewer runtime #when verified #then it fails naming that artifact", () => {
+    const run = runVerifierOnPayload([...PACKED_ARTIFACTS.filter(path => path !== "plugin/runtime/dag-viewer/index.js"), ...skillPaths(PACKED_SKILL_COUNT)])
+    expect(run.exitCode).toBe(1)
+    expect(run.output).toContain("missing artifact: plugin/runtime/dag-viewer/index.js")
   })
 
   describe("#given a packed payload whose only gap is the dag eval sdk", () => {

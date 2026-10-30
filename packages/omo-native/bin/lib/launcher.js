@@ -9,6 +9,7 @@ import { runDoctorModels } from "./model-chains.js"
 import { doctorComputerUseLines } from "./computer-use-doctor.js"
 import { doctorConfigLines } from "./config-doctor.js"
 import { runDaemonCommand } from "./daemon.js"
+import { runDagCommand } from "./dag.js"
 import { runThreadCommand } from "./thread.js"
 import { isHostStatusAll, runHostStatusAll, sessionActivityReader } from "./host-status.js"
 import { runDoctor } from "./doctor.js"
@@ -143,6 +144,16 @@ export async function runLauncher(args = process.argv.slice(2)) {
   if (command === "ulw-loop") {
     console.error('omo ulw-loop is unavailable in this build: use the agent toolkit SDK from an eval js cell: const { agentToolkit } = await import(`${env("OMO_AGENT_TOOLKIT_SDK_ROOT")}/sdk.js`); print(await agentToolkit.status()) (Codex keeps the standalone CLI).')
     process.exitCode = 2
+    return
+  }
+  if (command === "dag") {
+    process.exitCode = await runDagCommand(args.slice(1), {
+      pluginRoot: join(packageRoot, "plugin"),
+      cwd: process.cwd(),
+      env: process.env,
+      stdout: process.stdout,
+      stderr: process.stderr,
+    })
     return
   }
   if (command === "thread") {
