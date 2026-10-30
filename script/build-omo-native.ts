@@ -48,11 +48,16 @@ export const CATEGORY_COVERAGE_PRELUDE_ASSET = join("runtime", "category-coverag
 // the category-coverage bundle.
 export const TASK_CONFIG_ENTRY = join(packageDir, "task-config-entry.ts")
 export const TASK_CONFIG_ARTIFACT = join("runtime", "task-config", "index.js")
+// Native-only runtime: `omo dag watch` renders the senpi-task DAG store read-only without booting
+// the engine (packages/omo-native/dag-viewer-entry.ts).
+export const DAG_VIEWER_ENTRY = join(packageDir, "dag-viewer-entry.ts")
+export const DAG_VIEWER_ARTIFACT = join("runtime", "dag-viewer", "index.js")
 export const NATIVE_REQUIRED_ARTIFACTS = [
   ...REQUIRED_PLUGIN_ARTIFACTS,
   CATEGORY_COVERAGE_ARTIFACT,
   CATEGORY_COVERAGE_PRELUDE_ASSET,
   TASK_CONFIG_ARTIFACT,
+  DAG_VIEWER_ARTIFACT,
 ] as const
 
 interface BuildOptions {
@@ -157,6 +162,7 @@ function runSenpiPluginBuild(outputDir: string): void {
     copyFileSync(join(repoRoot, "CHANGELOG.md"), join(stagedPluginDir, "CHANGELOG.md"))
     buildCategoryCoverageRuntime(join(stagedPluginDir, CATEGORY_COVERAGE_ARTIFACT))
     buildRuntimeBundle(TASK_CONFIG_ENTRY, join(stagedPluginDir, TASK_CONFIG_ARTIFACT), "task-config")
+    buildRuntimeBundle(DAG_VIEWER_ENTRY, join(stagedPluginDir, DAG_VIEWER_ARTIFACT), "dag-viewer")
     copyPluginPayload(outputDir, stagedPluginDir)
   } finally {
     rmSync(buildRoot, { recursive: true, force: true })

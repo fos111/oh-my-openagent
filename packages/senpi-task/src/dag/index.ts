@@ -86,6 +86,9 @@ export type {
   DagStorePaths,
 } from "./store"
 
+export { dagDirectoryPaths, resolveDagStateDirectory } from "./location"
+export type { DagDirectoryPaths, DagLocationOptions } from "./location"
+
 export { createDagJournal } from "./journal"
 export type { DagJournal, DagJournalCheckpoint, DagJournalListener, DagJournalOptions } from "./journal"
 

@@ -67,6 +67,7 @@ bunx oh-my-opencode
 | `install` / `setup` | Interactive setup wizard |
 | `uninstall` / `cleanup` | Remove managed Codex Light state |
 | `doctor` | Installation health diagnostics |
+| `dag watch` (OmO Native) | Read-only live terminal view of `mass ulw` DAG runs |
 | `run <message>` | Non-interactive OpenCode session runner with completion enforcement |
 | `get-local-version` | Show current installed version and check for updates |
 | `refresh-model-capabilities` | Refresh cached model capabilities snapshot from models.dev |
@@ -189,6 +190,51 @@ bunx oh-my-openagent doctor
   - the stop path, reported as not armed until computer use starts input, because the engine arms the stop chord only then.
   The probe sends only the read-only `engine.hello` and `capabilities` requests and is bounded by the doctor's timeout.
 - `omo doctor --models [--json]` (OmO Native) prints every task category and agent as a spawn resolves it right now: the model it runs first, the runtime retry chain in order, and every declared rung with its source (`built-in`, `omo.json`, `category:<name>`) and state (`runs first`, `fallback N`, `excluded by exclude_models`, `no login`, `not reached`), then the main session's `model_profile` lane. It uses the spawn resolvers and the engine's offline model list (credentials are not probed). It exits 1 when the resolver runtime cannot load and 2 on an option other than `--json`. See [`exclude_models`](./omo-json.md#exclude_models-native-harness) to keep a model out of every chain.
+
+---
+
+## dag watch (OmO Native)
+
+`omo dag watch` renders a running `mass ulw` workflow in the terminal. It reads the
+DAG store on disk and never steers, retries, or edits a run.
+
+```bash
+omo dag watch                      # follow the newest run in this project
+omo dag watch --all-projects       # list and follow runs across projects
+omo dag watch --state-dir <path>   # read an explicit DAG directory
+omo dag watch --once --no-color    # print one frame, for scripts and CI
+omo dag watch --json               # print the snapshot as JSON
+```
+
+The view shows the task graph, per-node state, the critical path, bottlenecks, an
+inspector for the selected task, and a feed of run events. Use the arrow keys or
+`hjkl` to move, `tab` to change runs, `a` to toggle all projects, `t` for the tree
+fallback, `?` for help, and `q` to quit. When the terminal is narrower than 72
+columns the tree fallback is used automatically.
+
+### Options
+
+| Option | Description |
+| --- | --- |
+| `--project <path>` | Project root (default: current directory) |
+| `--state-dir <path>` | Read a specific DAG directory (the one containing `runs/` and `events/`) |
+| `--all-projects` | Watch every project under the agent home, newest run first |
+| `--run <id>` | Follow a specific run id instead of the newest run |
+| `--agent-dir <path>` | Override the agent home (`~/.omo/agent`) |
+| `--interval <ms>` | Poll interval in milliseconds (default: 1000; minimum: 100) |
+| `--once` | Render one frame and exit |
+| `--json` | Print the snapshot as JSON (one-shot) |
+| `--tree` | Start in the dependency-tree view |
+| `--no-color` | Disable ANSI color |
+| `--ascii` | Use ASCII graph glyphs |
+| `-h, --help` | Show usage |
+
+### Exit Codes
+
+`0` when a frame was rendered, `1` when no DAG runs or store exists, and `2` on a
+usage error. The command is read-only: it does not create a state directory, adopt
+a legacy in-project store, write an `.in-project` marker, or touch
+`~/.omo/desktop`.
 
 ---
 
@@ -335,4 +381,4 @@ bunx oh-my-openagent mcp oauth status [server-name]
 - `2` when the boulder state file exists but can't be read
 - `130` when `run` is aborted
 
-`run`, `install`, `uninstall`/`cleanup`, `doctor`, `get-local-version`, `refresh-model-capabilities`, `config migrate`, `boulder`, `ulw-loop`, and `mcp oauth` subcommands return explicit numeric exit codes.
+`run`, `install`, `uninstall`/`cleanup`, `doctor`, `dag watch`, `get-local-version`, `refresh-model-capabilities`, `config migrate`, `boulder`, `ulw-loop`, and `mcp oauth` subcommands return explicit numeric exit codes.

@@ -34,6 +34,8 @@ const REQUIRED_ARTIFACTS = [
   // omo daemon resolves its settings (task.host_engine_policy and task.host_idle_exit_ms) through the config
   // loader with it (bin/lib/daemon-config.js).
   "plugin/runtime/task-config/index.js",
+  // omo dag watch renders senpi-task DAG runs read-only (bin/lib/dag.js).
+  "plugin/runtime/dag-viewer/index.js",
 ]
 
 // A bundle that reads `join(dirname(fileURLToPath(import.meta.url)), "<file>")` needs <file> packed

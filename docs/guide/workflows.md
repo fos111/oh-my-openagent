@@ -30,6 +30,23 @@ The Workflows panel lists every run in the thread, newest first. Open a run to s
 
 Click a task to open the agent working on it and read what it did.
 
+## Watch a run in your terminal
+
+`omo dag watch` gives you the same picture without leaving the terminal: the task
+graph, each task's state, the critical path, bottlenecks, a task inspector, and a
+live feed of run events. It only reads the run; it cannot retry, steer, or change it.
+
+```bash
+omo dag watch                  # follow the newest run in this project
+omo dag watch --all-projects   # pick from runs across projects
+omo dag watch --tree           # start in the dependency-tree view
+```
+
+Use the arrow keys or `hjkl` to move between tasks, `tab` to switch runs, `a` to
+toggle all projects, `?` for help, and `q` to quit. In scripts, `--once` prints one
+frame and `--json` prints the snapshot as JSON. See the
+[CLI reference](../reference/cli.md#dag-watch-omo-native) for every option.
+
 ## Stop or change a run
 
 Tell OmO in the thread, for example "stop the workflow" or "skip the docs tasks". To stop one task right away, cancel its agent from the Agents panel.

@@ -37,6 +37,11 @@ omo-senpi plugin payload produced by `bun run build:omo-native` (gitignored, nev
     remain Bun-owned symlinks; only marked legacy wrappers for this install are restored to links
     (#11019). Windows/npm keep the shipped Node shebang. A first manual upgrade from an older
     shim can fail before the new code runs; one new-version launch migrates it for the next update.
+  - `dag.js` — `omo dag watch`, the read-only terminal viewer for `mass ulw` DAG runs. It loads
+    `plugin/runtime/dag-viewer/index.js` (`dag-viewer-entry.ts`, bundled by `build:omo-native`),
+    resolves the DAG directory through senpi-task's read-only resolver (never adopts a legacy
+    in-project store), and serves `--once`/`--json` plus the interactive graph, inspector, and
+    event feed. The compiled entry dispatches it directly, so it never spawns the engine.
   - `doctor.js` — diagnostics plus stale-orphan detection: `classifyEngineProcesses` splits live
     engines into stale (interactive, PPID 1), attached and managed (`--mode`), and
     `reapStaleEngines` terminates ONLY explicitly named pids that are still stale at request time.
@@ -67,11 +72,12 @@ omo-senpi plugin payload produced by `bun run build:omo-native` (gitignored, nev
 ## COMMANDS
 
 ```bash
-bun run build:omo-native                 # stage plugin payload (repo root)
+bun run build:omo-native                 # stage plugin payload, incl. runtime/dag-viewer (repo root)
 bun test packages/omo-native/test        # package tests (repo root)
 bunx tsc -p packages/omo-native/tsconfig.json --noEmit
 node packages/omo-native/bin/omo.js --version   # entry smoke check
 python3 packages/omo-native/test/pty-signal-qa.py packages/omo-native/bin/omo.js /tmp/qa.txt   # launcher signal QA (bun chain wherever bun is installed; OMO_RUNTIME=node for the node chain)
+node packages/omo-native/bin/omo.js dag watch --state-dir <dag-dir> --once --no-color   # viewer smoke check
 ```
 
 Release mechanics and the beta-channel contract: `docs/reference/omo-ai-publishing.md`.
