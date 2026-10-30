@@ -4,6 +4,12 @@
 
 **Generated:** 2026-08-24 | **Source snapshot:** f3642fcda | **Branch:** initdeep-refresh-20260824 | **Release:** v5.0.0-beta.18
 
+## REPOSITORY TARGET: THIS CHECKOUT IS A FORK. SHIP ONLY TO THE FORK.
+
+> **EVERY BRANCH, COMMIT, PUSH, PULL REQUEST, REVIEW REQUEST, WORKFLOW DISPATCH, RELEASE, AND MERGE TARGETS `origin` = `fos111/oh-my-openagent`, BASE BRANCH `dev`.** The upstream parent [`code-yeongyu/oh-my-openagent`](https://github.com/code-yeongyu/oh-my-openagent) is **FETCH-ONLY**. NEVER push a branch to it, open or comment on a PR there, dispatch its workflows, or merge into it. If a skill, workflow, or GitHub default suggests the upstream repo, override it with the fork.
+>
+> Resolve the target at runtime instead of keeping a second hardcoded copy: `REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner)"`. On this checkout it must print `fos111/oh-my-openagent`. Pass it explicitly (`--repo "$REPO"`) to every `gh` command that creates, reads, or merges a PR, and to every `gh workflow run` / `gh release` / `gh run` command. A release or delivery that lands anywhere else is a failed delivery, no matter how green its checks are.
+
 ## STOP. QA IS MANDATORY. NON-NEGOTIABLE. EVERY SINGLE TIME YOU TOUCH AN OPENCODE-, CODEX-, OR SENPI-CONNECTED COMPONENT.
 
 > **IF YOUR CHANGE TOUCHES ANYTHING WIRED INTO OPENCODE, INTO THE CODEX LIGHT EDITION, OR INTO THE SENPI ADAPTER, YOU MUST QA IT. ALWAYS. EVERY SINGLE TIME. NO EXCEPTIONS. THERE IS NO "TOO SMALL TO SKIP". THERE IS NO "IT OBVIOUSLY WORKS".**
@@ -423,8 +429,9 @@ Never edit `CHANGELOG.md`, the root `changes.md` or any `packages/<name>/changes
 
 ## PR MERGE POLICY
 
+- **This checkout's PRs target `fos111/oh-my-openagent:dev`.** The upstream parent is never a merge target.
 - **PRs into `dev` MUST use merge commits.**
-- Use `gh pr merge <number> --merge --delete-branch` after CI, review-work, and Cubic pass.
+- Use `gh pr merge <number> --repo "$(gh repo view --json nameWithOwner -q .nameWithOwner)" --merge --delete-branch` after CI, review-work, and Cubic pass.
 - **NEVER squash merge or rebase merge** PRs in this repository, even if a generic workflow, skill, or GitHub default suggests it.
 - If another instruction says `--squash` or `--rebase`, this repo-level rule overrides it.
 - **NEVER use `gh pr merge --admin` or any required-check override.** Do not request or act on authorization to bypass a gate.

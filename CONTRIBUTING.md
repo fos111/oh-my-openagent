@@ -66,11 +66,15 @@ If English isn't your first language, don't worry! We value your contributions r
 - **git** - Version control
 - **tmux** (optional) - Enables the `interactive_bash` tool and Team Mode visualization
 
+### Repository Target
+
+This working copy is the **`fos111/oh-my-openagent` fork** (parent: `code-yeongyu/oh-my-openagent`). Every branch, PR, review request, workflow dispatch, release, and merge targets `origin` = `fos111/oh-my-openagent`, base branch `dev`. The upstream parent is **fetch-only**: never push, open a PR, comment, or dispatch a workflow there. Resolve the target with `gh repo view --json nameWithOwner -q .nameWithOwner` and pass it explicitly (`--repo "$REPO"`) to `gh` commands.
+
 ### Development Setup
 
 ```bash
-# Clone the repository (with the frontend provenance submodules)
-git clone --recurse-submodules https://github.com/code-yeongyu/oh-my-openagent.git
+# Clone the fork (with the frontend provenance submodules)
+git clone --recurse-submodules https://github.com/fos111/oh-my-openagent.git
 cd oh-my-openagent
 
 # If you cloned without --recurse-submodules, initialize them now (non-fatal offline):
