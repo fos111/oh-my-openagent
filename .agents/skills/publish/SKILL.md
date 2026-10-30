@@ -5,6 +5,8 @@ description: "Publish oh-my-opencode to npm by triggering the GitHub Actions pub
 
 You are the release manager for oh-my-opencode. Execute the FULL publish workflow from start to finish.
 
+**Repository target:** releases ship from this checkout's fork, never the upstream parent. Resolve `TARGET_REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner)"` (this checkout: `fos111/oh-my-openagent`) and pass `--repo "$TARGET_REPO"` to every `gh workflow run`, `gh run`, `gh release`, and `gh pr` command. A release URL or run that resolves under `code-yeongyu/oh-my-openagent` is the wrong repository and must be treated as a failed dispatch.
+
 ## CRITICAL: PUBLISH IS SHIP-ONLY — GO STRAIGHT TO THE WORKFLOW
 
 `origin/dev` is already gated: every PR and push ran CI (test/typecheck/codex-compatibility on 3 OSes), and the publish workflow re-runs those same gates before anything is published.
@@ -142,14 +144,15 @@ This ensures the GitHub Actions workflow runs on the latest code including all l
 Dispatch from `dev`, pass bump selectors through `bump`, and pass exact versions through `version`. The required `bump` input remains `patch` for explicit-version dispatches but is ignored by the workflow because `version` takes precedence.
 
 ```bash
+TARGET_REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner)"
 if [ "$RELEASE_KIND" = bump ]; then
-  RUN_URL="$(gh workflow run publish.yml --ref dev -f "bump=${RELEASE_INPUT}")"
+  RUN_URL="$(gh workflow run publish.yml --repo "$TARGET_REPO" --ref dev -f "bump=${RELEASE_INPUT}")"
 else
-  RUN_URL="$(gh workflow run publish.yml --ref dev -f bump=patch -f "version=${RELEASE_INPUT}")"
+  RUN_URL="$(gh workflow run publish.yml --repo "$TARGET_REPO" --ref dev -f bump=patch -f "version=${RELEASE_INPUT}")"
 fi
 
-if ! [[ "$RUN_URL" =~ ^https://github.com/code-yeongyu/oh-my-openagent/actions/runs/[0-9]+$ ]]; then
-  echo "Publish dispatch did not return an exact workflow run URL: $RUN_URL" >&2
+if ! [[ "$RUN_URL" =~ ^https://github.com/${TARGET_REPO}/actions/runs/[0-9]+$ ]]; then
+  echo "Publish dispatch did not return an exact workflow run URL on ${TARGET_REPO}: $RUN_URL" >&2
   exit 1
 fi
 RUN_ID="${RUN_URL##*/}"
@@ -157,7 +160,7 @@ if ! [[ "$RUN_ID" =~ ^[0-9]+$ ]]; then
   echo "Publish dispatch returned an invalid run ID: $RUN_ID" >&2
   exit 1
 fi
-gh run view "${RUN_ID}" --json databaseId,status,url --jq '{databaseId,status,url}'
+gh run view "${RUN_ID}" --repo "$TARGET_REPO" --json databaseId,status,url --jq '{databaseId,status,url}'
 ```
 
 The returned run ID owns this release attempt. Never replace it with a latest-run lookup.
@@ -177,14 +180,14 @@ The publish run is a single workflow with sequential stages. Expected timeline (
 
 Poll job-level status every 30 seconds and report stage transitions to the user:
 ```bash
-gh run view "${RUN_ID}" --json status,conclusion,jobs --jq '{status, conclusion, stage: ([.jobs[] | select(.status=="in_progress") | .name] | join(", "))}'
+gh run view "${RUN_ID}" --repo "$TARGET_REPO" --json status,conclusion,jobs --jq '{status, conclusion, stage: ([.jobs[] | select(.status=="in_progress") | .name] | join(", "))}'
 ```
 
 **IMPORTANT: Use polling loop, NOT sleep commands.** Use the waiting time to draft the enhanced release summary (Step 6) — do not sit idle, and do not start any review activity.
 
 If conclusion is `failure`, show error and stop:
 ```bash
-gh run view "${RUN_ID}" --log-failed
+gh run view "${RUN_ID}" --repo "$TARGET_REPO" --log-failed
 ```
 
 ---
@@ -199,7 +202,7 @@ git pull --rebase
 NEW_VERSION=$(node -p "require('./package.json').version")
 
 # Verify release exists on GitHub
-gh release view "v${NEW_VERSION}" --json tagName,url --jq '{tag: .tagName, url: .url}'
+gh release view "v${NEW_VERSION}" --repo "$TARGET_REPO" --json tagName,url --jq '{tag: .tagName, url: .url}'
 ```
 
 **Release notes are written BEFORE the release, not after.**
@@ -343,7 +346,7 @@ The final release note structure:
 
 ```bash
 # 1. Fetch existing auto-generated body
-EXISTING_BODY=$(gh release view "v${NEW_VERSION}" --json body --jq '.body')
+EXISTING_BODY=$(gh release view "v${NEW_VERSION}" --repo "$TARGET_REPO" --json body --jq '.body')
 
 # 2. Combine: enhanced summary on top, auto-generated below
 {
@@ -355,11 +358,11 @@ EXISTING_BODY=$(gh release view "v${NEW_VERSION}" --json body --jq '.body')
 } > /tmp/final-release-v${NEW_VERSION}.md
 
 # 3. Update the release (additive only)
-gh release edit "v${NEW_VERSION}" --notes-file /tmp/final-release-v${NEW_VERSION}.md
+gh release edit "v${NEW_VERSION}" --repo "$TARGET_REPO" --notes-file /tmp/final-release-v${NEW_VERSION}.md
 
 # 4. Confirm
 echo "✅ Release v${NEW_VERSION} updated with enhanced summary."
-gh release view "v${NEW_VERSION}" --json url --jq '.url'
+gh release view "v${NEW_VERSION}" --repo "$TARGET_REPO" --json url --jq '.url'
 ```
 
 ---
@@ -413,7 +416,7 @@ Plus {summary of remaining changes}.
 
 ```bash
 RELEASE_BOT_ID=1486173823354146917
-RELEASE_URL=$(gh release view "v${NEW_VERSION}" --json url --jq '.url')
+RELEASE_URL=$(gh release view "v${NEW_VERSION}" --repo "$TARGET_REPO" --json url --jq '.url')
 agent-discordbot message send 1454708427392680067 "{your message following the style above}" --bot "$RELEASE_BOT_ID"
 ```
 
@@ -451,7 +454,7 @@ Each should show `${NEW_VERSION}`. On mismatch, warn the user and point at the `
 
 Report success to user with:
 - New version number
-- GitHub release URL: https://github.com/code-yeongyu/oh-my-opencode/releases/tag/v{version}
+- GitHub release URL: https://github.com/${TARGET_REPO}/releases/tag/v{version}
 - npm package URL: https://www.npmjs.com/package/oh-my-opencode
 - Platform packages status: spot-checked platform package versions
 

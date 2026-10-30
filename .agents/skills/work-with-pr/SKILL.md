@@ -29,6 +29,8 @@ Phase 4: Merge         → Auto-merge by default; wait until actually merged, th
 
 ## Phase 0: Setup
 
+**Repository target: this checkout is a fork.** Every PR, check read, review request, and merge targets `origin` (the fork), never the upstream parent. Pass `--repo "$REPO"` explicitly to every `gh pr`/`gh run` command; never rely on GitHub's default repository resolution.
+
 Create a fresh isolated worktree for each PR before implementation starts. The user's main working directory is read-only context — it may have uncommitted work, and a branch checkout would destroy it. Isolation also makes parallelism cheap: one worktree per PR, so several build at once without colliding.
 
 <setup>
@@ -142,6 +144,7 @@ If the PR body needs screenshots or terminal PNGs, follow `docs/reference/github
 
 ```bash
 gh pr create \
+  --repo "$REPO" \
   --base "$BASE_BRANCH" \
   --head "$BRANCH_NAME" \
   --title "$PR_TITLE" \
@@ -171,7 +174,7 @@ EOF
 Capture the PR number:
 
 ```bash
-PR_NUMBER=$(gh pr view --json number -q .number)
+PR_NUMBER=$(gh pr view "$BRANCH_NAME" --repo "$REPO" --json number -q .number)
 ```
 
 </pr_creation>
@@ -204,22 +207,22 @@ CI is the fastest feedback loop. Subscribe to its completion via `monitor` — n
 # round-trip (~29s) on every poll. Instead, register a monitor and end the turn:
 monitor({
   description: "CI completion for PR $PR_NUMBER",
-  command: "gh pr checks $PR_NUMBER --watch --fail-fast",
+  command: "gh pr checks $PR_NUMBER --repo $REPO --watch --fail-fast",
   filter: "completed|fail|cancel"
 })
 # → end turn; the monitor's matching line arrives as an injected event.
 # For a single midpoint status peek (at most once), use:
-#   gh pr checks "$PR_NUMBER"  # one-shot, no --watch
+#   gh pr checks "$PR_NUMBER" --repo "$REPO"  # one-shot, no --watch
 ```
 
 **On failure**: Get the failed run logs to understand what broke:
 
 ```bash
 # Find the failed run
-RUN_ID=$(gh run list --branch "$BRANCH_NAME" --status failure --json databaseId --jq '.[0].databaseId')
+RUN_ID=$(gh run list --repo "$REPO" --branch "$BRANCH_NAME" --status failure --json databaseId --jq '.[0].databaseId')
 
 # Get failed job logs
-gh run view "$RUN_ID" --log-failed
+gh run view "$RUN_ID" --repo "$REPO" --log-failed
 ```
 
 Read the logs, then fix per the iteration discipline below.
@@ -296,9 +299,9 @@ Enabling auto-merge is the default - do it unless the user explicitly told you n
 ```bash
 # This repository requires merge commits. Never use --squash or --rebase.
 # --auto arms auto-merge: GitHub merges as soon as all required checks pass.
-gh pr merge "$PR_NUMBER" --merge --auto --delete-branch
+gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --auto --delete-branch
 # If the repo has not enabled the auto-merge feature, --auto errors; once the gates
-# are green, fall back to a direct merge: gh pr merge "$PR_NUMBER" --merge --delete-branch
+# are green, fall back to a direct merge: gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --delete-branch
 ```
 
 Then subscribe to the merge completing — never block a model round-trip on an `until [ ... MERGED ]` polling loop:
@@ -307,12 +310,12 @@ Then subscribe to the merge completing — never block a model round-trip on an 
 # Subscribe to merge completion. The monitor exits when gh pr view returns MERGED.
 monitor({
   description: "Merge completion for PR $PR_NUMBER",
-  command: "[ \"$(gh pr view $PR_NUMBER --json state -q .state)\" = \"MERGED\" ] && echo MERGED || echo WAITING",
+  command: "[ \"$(gh pr view $PR_NUMBER --repo $REPO --json state -q .state)\" = \"MERGED\" ] && echo MERGED || echo WAITING",
   filter: "MERGED",
   timeout_ms: 1800000   # 30 min bound for auto-merge to land after all gates pass
 })
 # → end turn; the MERGED event wakes the session for the cleanup step.
-# If the monitor times out, check merge state once: gh pr view "$PR_NUMBER" --json state -q .state
+# If the monitor times out, check merge state once: gh pr view "$PR_NUMBER" --repo "$REPO" --json state -q .state
 ```
 
 If the user opted out of merging, skip the merge but STILL run the cleanup below: the worktree is removed either way.
